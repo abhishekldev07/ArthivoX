@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="src/assets/brand/arthivox-full.png" alt="ArthivoX" width="520" />
+  <img src="src/assets/brand/arthivox-splash.png" alt="ArthivoX" width="520" />
 </p>
 
 <h1 align="center">ArthivoX</h1>
@@ -179,17 +179,7 @@ ArthivoX
 
 > `fixtures/` is part of the application setup flow and should not be removed.
 
-## Security
 
-If you discover a security issue, avoid publishing sensitive exploit details in a public issue. Contact the project maintainer privately first so the issue can be reviewed responsibly.
-
-## License & Attribution
-
-ArthivoX is distributed under the **GNU Affero General Public License v3.0 (AGPL-3.0)**.
-
-See [`LICENSE`](LICENSE) for the complete terms and [`NOTICE.md`](NOTICE.md) for project and upstream attribution.
-
-ArthivoX includes substantial modifications, additional functionality, cloud integration, branding, and interface work developed for the ArthivoX project. Portions of the codebase are based on Frappe Books and remain subject to the applicable open-source license and attribution requirements.
 
 ---
 
