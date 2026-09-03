@@ -1,0 +1,420 @@
+<template>
+  <div
+    class="arthivox-nav-shell h-full flex relative window-no-drag"
+    :class="{ 'window-drag': platform !== 'Windows' }"
+  >
+    <div class="arthivox-icon-rail window-no-drag">
+      <div class="arthivox-rail-brand" title="ArthivoX">
+        <img :src="arthivoxSymbol" alt="ArthivoX" />
+      </div>
+
+      <div class="arthivox-rail-divider" />
+
+      <button
+        v-for="group in groups"
+        :key="group.name"
+        class="arthivox-rail-button"
+        :class="{ active: isGroupActive(group) }"
+        :title="group.label"
+        @click="routeToSidebarItem(group)"
+      >
+        <Icon
+          :name="group.icon"
+          :size="group.iconSize || '18'"
+          :height="group.iconHeight ?? 0"
+          :active="!!isGroupActive(group)"
+          :darkMode="true"
+        />
+        <span class="arthivox-rail-dot" />
+      </button>
+
+      <div class="mt-auto flex flex-col items-center gap-2 pb-3">
+        <button
+          class="arthivox-rail-button"
+          :title="t`Cloud companies`"
+          @click="$emit('cloud-home')"
+        >
+          <feather-icon name="cloud" class="w-4 h-4" />
+        </button>
+        <button
+          class="arthivox-rail-button"
+          :title="t`Appearance preferences`"
+          @click="openAppearance"
+        >
+          <feather-icon name="sun" class="w-4 h-4" />
+        </button>
+        <button
+          data-testid="change-db"
+          class="arthivox-rail-button"
+          :title="t`Switch workspace`"
+          @click="$emit('change-db-file')"
+        >
+          <feather-icon name="repeat" class="w-4 h-4" />
+        </button>
+        <button
+          class="arthivox-rail-button"
+          :title="t`Keyboard shortcuts`"
+          @click="viewShortcuts = true"
+        >
+          <feather-icon name="command" class="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+
+    <aside class="arthivox-context-panel window-no-drag">
+      <header
+        class="arthivox-context-brand"
+        :class="platform === 'Mac' && languageDirection === 'ltr' ? 'pt-10' : ''"
+      >
+        <div>
+          <p class="text-xs uppercase tracking-wider text-teal-300 mb-1">ArthivoX</p>
+          <h1 class="text-lg font-semibold text-white leading-tight">{{ activeGroup?.label || t`Workspace` }}</h1>
+        </div>
+        <button
+          class="arthivox-context-collapse rtl-rotate-180"
+          :title="t`Collapse navigation`"
+          @click="() => toggleSidebar()"
+        >
+          <feather-icon name="chevrons-left" class="w-4 h-4" />
+        </button>
+      </header>
+
+      <div class="px-4 pb-4">
+        <div class="arthivox-company-chip">
+          <div class="arthivox-company-avatar">{{ companyInitial }}</div>
+          <div class="min-w-0 flex-1">
+            <p class="ax121-context-muted text-xs mb-0.5">{{ t`Working in` }}</p>
+            <p data-testid="company-name" class="text-sm font-semibold text-white truncate">
+              {{ companyName }}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="px-3 min-h-0 flex-1 overflow-y-auto no-scrollbar">
+        <div v-if="activeGroup?.items?.length" class="pb-4">
+          <p class="arthivox-context-label">{{ t`Open` }} {{ activeGroup.label }}</p>
+          <button
+            v-for="item in activeGroup.items"
+            :key="item.label"
+            class="arthivox-context-link"
+            :class="{ active: isItemActive(item) }"
+            @click="routeToSidebarItem(item)"
+          >
+            <span class="arthivox-context-bullet">
+              <feather-icon
+                :name="isItemActive(item) ? 'arrow-right' : 'circle'"
+                :class="isItemActive(item) ? 'w-3.5 h-3.5' : 'w-2.5 h-2.5'"
+              />
+            </span>
+            <span class="truncate">{{ item.label }}</span>
+          </button>
+        </div>
+
+        <div v-else class="arthivox-context-empty">
+          <div class="w-10 h-10 rounded-xl bg-teal-500 bg-opacity-10 flex-center mb-3">
+            <Icon
+              v-if="activeGroup"
+              :name="activeGroup.icon"
+              :size="activeGroup.iconSize || '18'"
+              :height="activeGroup.iconHeight ?? 0"
+              :active="true"
+              :darkMode="true"
+            />
+          </div>
+          <p class="ax121-context-strong text-sm font-medium">{{ activeGroup?.label }}</p>
+          <p class="ax121-context-muted text-xs mt-1 leading-relaxed">
+            {{ t`This area opens directly. Use the icon rail to move between workspaces.` }}
+          </p>
+        </div>
+      </div>
+
+      <footer class="px-4 py-4 border-t border-slate-800">
+        <button
+          class="arthivox-context-preference mb-2 ax10-sync-row"
+          :title="syncStatus.message"
+          @click="requestCloudSync"
+        >
+          <span class="flex items-center gap-2 min-w-0">
+            <span class="ax10-sync-dot" :class="`is-${syncStatus.state}`"></span>
+            <span class="truncate">{{ syncLabel }}</span>
+          </span>
+          <span class="ax10-sync-meta">{{ syncMeta }}</span>
+        </button>
+        <button
+          class="arthivox-context-preference mb-2"
+          :disabled="syncStatus.state === 'disabled'"
+          :title="t`Create a client-side encrypted SQLite snapshot in ArthivoX Cloud`"
+          @click="requestCloudBackup"
+        >
+          <span class="flex items-center gap-2 min-w-0">
+            <feather-icon name="upload-cloud" class="w-3.5 h-3.5" />
+            <span class="truncate">{{ t`Back up now` }}</span>
+          </span>
+          <span class="text-slate-500 text-xs">{{ t`AES-256` }}</span>
+        </button>
+        <button class="arthivox-context-preference mb-2" @click="$emit('cloud-home')">
+          <span class="flex items-center gap-2">
+            <feather-icon name="cloud" class="w-3.5 h-3.5" />
+            {{ t`Cloud companies` }}
+          </span>
+          <feather-icon name="arrow-up-right" class="w-3.5 h-3.5 text-slate-500" />
+        </button>
+        <button class="arthivox-context-preference" @click="openAppearance">
+          <span class="flex items-center gap-2">
+            <feather-icon name="sun" class="w-3.5 h-3.5" />
+            {{ t`Appearance` }}
+          </span>
+          <span class="text-slate-500">{{ darkMode ? t`Dark` : t`Light` }}</span>
+        </button>
+        <div class="flex items-center justify-between text-xs text-slate-500">
+          <span>{{ t`Desktop workspace` }}</span>
+          <span>v{{ appVersion }}</span>
+        </div>
+      </footer>
+    </aside>
+
+    <ConflictResolver />
+
+    <Modal :open-modal="viewShortcuts" @closemodal="viewShortcuts = false">
+      <ShortcutsHelper class="w-form" />
+    </Modal>
+  </div>
+</template>
+
+<script lang="ts">
+import { ARTHIVOX_SYMBOL_DATA_URL } from 'src/assets/brand/embeddedBrand';
+import { fyo } from 'src/initFyo';
+import {
+  ARTHIVOX_SYNC_NOW_EVENT,
+  ARTHIVOX_SYNC_STATUS_EVENT,
+  getCloudSyncStatus,
+  openCloudConflictResolver,
+  type ArthivoXSyncStatus,
+} from 'src/cloud/sync';
+import { ARTHIVOX_BACKUP_NOW_EVENT } from 'src/cloud/backup';
+import { languageDirectionKey, shortcutsKey } from 'src/utils/injectionKeys';
+import { getSidebarConfig } from 'src/utils/sidebarConfig';
+import { SidebarConfig, SidebarItem, SidebarRoot } from 'src/utils/types';
+import { routeTo, toggleSidebar } from 'src/utils/ui';
+import { defineComponent, inject } from 'vue';
+import router from '../router';
+import ConflictResolver from './ConflictResolver.vue';
+import Icon from './Icon.vue';
+import Modal from './Modal.vue';
+import ShortcutsHelper from './ShortcutsHelper.vue';
+
+const COMPONENT_NAME = 'Sidebar';
+
+export default defineComponent({
+  components: { ConflictResolver, Icon, Modal, ShortcutsHelper },
+  props: {
+    darkMode: { type: Boolean, default: false },
+  },
+  emits: ['change-db-file', 'toggle-darkmode', 'cloud-home'],
+  setup() {
+    return {
+      languageDirection: inject(languageDirectionKey),
+      shortcuts: inject(shortcutsKey),
+    };
+  },
+  data() {
+    return {
+      arthivoxSymbol: ARTHIVOX_SYMBOL_DATA_URL,
+      companyName: '',
+      groups: [],
+      viewShortcuts: false,
+      activeGroup: null,
+      syncStatus: getCloudSyncStatus(),
+    } as {
+      arthivoxSymbol: string;
+      companyName: string;
+      groups: SidebarConfig;
+      viewShortcuts: boolean;
+      activeGroup: null | SidebarRoot;
+      syncStatus: ArthivoXSyncStatus;
+    };
+  },
+  computed: {
+    appVersion() {
+      return fyo.store.appVersion;
+    },
+    companyInitial(): string {
+      return (this.companyName || 'A').trim().charAt(0).toUpperCase();
+    },
+    syncLabel(): string {
+      const state = this.syncStatus.state;
+      if (state === 'syncing') return this.t`Syncing`;
+      if (state === 'offline') return this.t`Offline`;
+      if (state === 'conflict') return this.t`Sync conflict`;
+      if (state === 'error') return this.t`Cloud issue`;
+      if (state === 'disabled') return this.t`Cloud not linked`;
+      return this.t`Cloud synced`;
+    },
+    syncMeta(): string {
+      if (this.syncStatus.pending > 0) {
+        return `${this.syncStatus.pending} pending`;
+      }
+      if (this.syncStatus.state === 'syncing') return 'now';
+      if (this.syncStatus.state === 'offline') return 'local';
+      if (this.syncStatus.state === 'error' || this.syncStatus.state === 'conflict') return 'review';
+      if (!this.syncStatus.lastSyncedAt) return '';
+      const date = new Date(this.syncStatus.lastSyncedAt);
+      if (Number.isNaN(date.getTime())) return '';
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    },
+  },
+  async mounted() {
+    const { companyName } = await fyo.doc.getDoc('AccountingSettings');
+    this.companyName = companyName as string;
+    this.groups = await getSidebarConfig();
+
+    this.setActiveGroup();
+    router.afterEach(() => this.setActiveGroup());
+
+    this.shortcuts?.shift.set(COMPONENT_NAME, ['KeyH'], () => {
+      if (document.body === document.activeElement) {
+        this.toggleSidebar();
+      }
+    });
+
+    this.syncStatus = getCloudSyncStatus();
+    window.addEventListener(
+      ARTHIVOX_SYNC_STATUS_EVENT,
+      this.handleSyncStatus as EventListener
+    );
+  },
+  unmounted() {
+    this.shortcuts?.delete(COMPONENT_NAME);
+    window.removeEventListener(
+      ARTHIVOX_SYNC_STATUS_EVENT,
+      this.handleSyncStatus as EventListener
+    );
+  },
+  methods: {
+    routeTo,
+    toggleSidebar,
+    openAppearance() {
+      window.dispatchEvent(new CustomEvent('arthivox-open-appearance'));
+    },
+    handleSyncStatus(event: Event) {
+      const detail = (event as CustomEvent<ArthivoXSyncStatus>).detail;
+      if (detail) {
+        this.syncStatus = detail;
+      }
+    },
+    requestCloudSync() {
+      if (this.syncStatus.state === 'conflict') {
+        openCloudConflictResolver();
+        return;
+      }
+      window.dispatchEvent(new Event(ARTHIVOX_SYNC_NOW_EVENT));
+    },
+    requestCloudBackup() {
+      window.dispatchEvent(new Event(ARTHIVOX_BACKUP_NOW_EVENT));
+    },
+    setActiveGroup() {
+      const { fullPath } = this.$router.currentRoute.value;
+      const fallBackGroup = this.activeGroup;
+      this.activeGroup =
+        this.groups.find((g) => {
+          if (fullPath.startsWith(g.route) && g.route !== '/') {
+            return true;
+          }
+          if (g.route === fullPath) {
+            return true;
+          }
+          if (g.items) {
+            return g.items.some(
+              ({ route }) => route === fullPath || fullPath.startsWith(route)
+            );
+          }
+          return false;
+        }) ??
+        fallBackGroup ??
+        this.groups[0];
+    },
+    isItemActive(item: SidebarItem) {
+      const { path: currentRoute, params } = this.$route;
+      const routeMatch = currentRoute === item.route;
+      const schemaNameMatch = item.schemaName && params.schemaName === item.schemaName;
+      const isMatch = routeMatch || schemaNameMatch;
+
+      if (params.name && item.schemaName && !isMatch) {
+        return currentRoute.includes(`${item.schemaName}/${params.name}`);
+      }
+      return isMatch;
+    },
+    isGroupActive(group: SidebarRoot) {
+      return this.activeGroup && group.name === this.activeGroup.name;
+    },
+    routeToSidebarItem(item: SidebarItem | SidebarRoot) {
+      routeTo(this.getPath(item));
+    },
+    getPath(item: SidebarItem | SidebarRoot) {
+      const { route: path, filters } = item;
+      if (!filters) {
+        return path;
+      }
+      return { path, query: { filters: JSON.stringify(filters) } };
+    },
+  },
+});
+</script>
+
+<style scoped>
+/* ArthivoX v12.1: this panel stays navy in both application themes,
+   so its helper copy must never inherit light-theme text colors. */
+.ax121-context-strong {
+  color: #f5f9ff !important;
+}
+
+.ax121-context-muted {
+  color: #9fb3cc !important;
+  opacity: 1 !important;
+  -webkit-text-fill-color: #9fb3cc !important;
+}
+
+.ax10-sync-row {
+  min-width: 0;
+}
+.ax10-sync-dot {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 8px;
+  border-radius: 999px;
+  background: #64748b;
+  box-shadow: 0 0 0 3px rgba(100, 116, 139, 0.12);
+}
+.ax10-sync-dot.is-idle {
+  background: #2dd4bf;
+  box-shadow: 0 0 0 3px rgba(45, 212, 191, 0.12);
+}
+.ax10-sync-dot.is-syncing {
+  background: #38bdf8;
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.14);
+  animation: ax10SyncPulse 1.1s ease-in-out infinite;
+}
+.ax10-sync-dot.is-offline {
+  background: #f59e0b;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.14);
+}
+.ax10-sync-dot.is-error,
+.ax10-sync-dot.is-conflict {
+  background: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.14);
+}
+.ax10-sync-meta {
+  flex: 0 0 auto;
+  max-width: 74px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #64748b;
+  font-size: 11px;
+}
+@keyframes ax10SyncPulse {
+  0%, 100% { opacity: .45; transform: scale(.82); }
+  50% { opacity: 1; transform: scale(1); }
+}
+</style>

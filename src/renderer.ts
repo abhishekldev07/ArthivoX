@@ -1,0 +1,75 @@
+import { CUSTOM_EVENTS } from 'utils/messages';
+import { UnexpectedLogObject } from 'utils/types';
+import { App as VueApp, createApp } from 'vue';
+import App from './App.vue';
+import Badge from './components/Badge.vue';
+import FeatherIcon from './components/FeatherIcon.vue';
+import { handleError, sendError } from './errorHandling';
+import { fyo } from './initFyo';
+import { outsideClickDirective } from './renderer/helpers';
+import registerIpcRendererListeners from './renderer/registerIpcRendererListeners';
+import router from './router';
+import { stringifyCircular } from './utils';
+import { setLanguageMap } from './utils/language';
+
+void (async () => {
+  const language = fyo.config.get('language') as string;
+  if (language) await setLanguageMap(language);
+  fyo.store.language = language || 'English';
+
+  registerIpcRendererListeners();
+  const { isDevelopment, platform, version } = await ipc.getEnv();
+  fyo.store.isDevelopment = isDevelopment;
+  fyo.store.appVersion = version;
+  fyo.store.platform = platform;
+  const platformName = getPlatformName(platform);
+
+  const app = createApp({ template: '<App/>' });
+  app.config.unwrapInjectedRef = true;
+  setErrorHandlers(app);
+  app.use(router);
+  app.component('App', App);
+  app.component('FeatherIcon', FeatherIcon);
+  app.component('Badge', Badge);
+  app.directive('on-outside-click', outsideClickDirective);
+  app.mixin({
+    computed: { fyo() { return fyo; }, platform() { return platformName; } },
+    methods: { t: fyo.t, T: fyo.T },
+  });
+  app.mount('body');
+})();
+
+function setErrorHandlers(app: VueApp) {
+  window.onerror = (message, source, lineno, colno, error) => {
+    error = error ?? new Error('triggered in window.onerror');
+    void handleError(true, error, { message, source, lineno, colno });
+  };
+  window.onunhandledrejection = (event: PromiseRejectionEvent) => {
+    const error = event.reason instanceof Error ? event.reason : new Error(String(event.reason));
+    handleError(true, error).catch((err) => console.error(err));
+  };
+  window.addEventListener(CUSTOM_EVENTS.LOG_UNEXPECTED, (event) => {
+    const details = (event as CustomEvent)?.detail as UnexpectedLogObject;
+    void sendError(details);
+  });
+  app.config.errorHandler = (err, vm, info) => {
+    const more: Record<string, unknown> = { info };
+    if (vm) {
+      const { fullPath, params } = vm.$route;
+      more.fullPath = fullPath;
+      more.params = stringifyCircular(params ?? {});
+      more.props = stringifyCircular(vm.$props ?? {}, true, true);
+    }
+    void handleError(false, err as Error, more);
+    console.error(err, vm, info);
+  };
+}
+
+function getPlatformName(platform: string) {
+  switch (platform) {
+    case 'win32': return 'Windows';
+    case 'darwin': return 'Mac';
+    case 'linux': return 'Linux';
+    default: return 'Linux';
+  }
+}

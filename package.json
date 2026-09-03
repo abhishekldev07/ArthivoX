@@ -1,0 +1,93 @@
+{
+  "name": "arthivox-desktop",
+  "productName": "ArthivoX",
+  "version": "0.37.0",
+  "description": "Local-first desktop accounting with secure ArthivoX Cloud sync and encrypted backup.",
+  "author": {
+    "name": "ArthivoX"
+  },
+  "scripts": {
+    "dev": "node build/scripts/dev.mjs",
+    "build": "node build/scripts/build.mjs",
+    "build:source": "node build/scripts/build.mjs --nopackage",
+    "build:win": "node build/scripts/build.mjs --win --x64",
+    "build:win:unsigned": "node build/scripts/build.mjs --win --x64 --nosign",
+    "postinstall": "electron-rebuild",
+    "postuninstall": "electron-rebuild",
+    "script:translate": "scripts/runner.sh scripts/generateTranslations.ts",
+    "lint": "eslint . --ext ts,vue",
+    "typecheck": "vue-tsc --noEmit",
+    "format": "prettier --write ."
+  },
+  "dependencies": {
+    "@codemirror/autocomplete": "^6.4.2",
+    "@codemirror/lang-vue": "^0.1.1",
+    "@popperjs/core": "^2.10.2",
+    "better-sqlite3": "^9.2.2",
+    "bree": "^9.2.4",
+    "codemirror": "^6.0.1",
+    "core-js": "^3.19.0",
+    "electron-store": "^8.0.1",
+    "feather-icons": "^4.28.0",
+    "knex": "^2.4.0",
+    "lodash": "^4.18.1",
+    "luxon": "^2.5.2",
+    "node-fetch": "2",
+    "pesa": "^1.1.12",
+    "source-map-support": "^0.5.21",
+    "vue": "^3.2.40",
+    "vue-router": "^4.0.12"
+  },
+  "devDependencies": {
+    "@codemirror/language": "^6.0.0",
+    "@codemirror/state": "^6.0.0",
+    "@codemirror/view": "^6.0.0",
+    "@electron/rebuild": "^3.4.1",
+    "@lezer/common": "^1.0.0",
+    "@types/assert": "^1.5.6",
+    "@types/better-sqlite3": "^7.6.4",
+    "@types/lodash": "^4.14.179",
+    "@types/luxon": "^2.3.1",
+    "@types/node": "^17.0.23",
+    "@types/node-fetch": "^2.6.1",
+    "@typescript-eslint/eslint-plugin": "5.60.0",
+    "@typescript-eslint/parser": "5.60.0",
+    "@vitejs/plugin-vue": "^4.2.3",
+    "autoprefixer": "^9",
+    "chokidar": "^3.5.3",
+    "dotenv": "^16.0.0",
+    "electron": "22.3.27",
+    "electron-builder": "^24.9.1",
+    "eslint": "^8.43.0",
+    "eslint-config-prettier": "^8.3.0",
+    "eslint-plugin-prettier": "^4.0.0",
+    "eslint-plugin-vue": "^9.15.0",
+    "execa": "^7.1.1",
+    "fs-extra": "^11.1.1",
+    "postcss": "^8",
+    "prettier": "^2.4.1",
+    "tailwindcss": "npm:@tailwindcss/postcss7-compat",
+    "tailwindcss-rtl": "^0.9.0",
+    "ts-node": "^10.7.0",
+    "tsconfig-paths": "^3.14.1",
+    "tslib": "^2.3.1",
+    "typescript": "^4.6.2",
+    "vite": "^5.4.21",
+    "vue-tsc": "^1.6.5",
+    "yargs": "^17.7.2"
+  },
+  "resolutions": {
+    "node-abi": "^3.54.0"
+  },
+  "prettier": {
+    "semi": true,
+    "singleQuote": true,
+    "trailingComma": "es5"
+  },
+  "license": "AGPL-3.0-only",
+  "private": true,
+  "engines": {
+    "node": ">=20 <21",
+    "yarn": ">=1.22 <2"
+  }
+}
