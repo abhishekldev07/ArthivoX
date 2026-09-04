@@ -401,6 +401,41 @@ export async function createCompany(input: {
   return result;
 }
 
+export async function updateCompany(
+  companyId: string,
+  input: { name: string }
+): Promise<ArthivoXCloudCompany> {
+  const name = input.name.trim();
+  if (name.length < 2 || name.length > 80) {
+    throw new Error('Company name must be between 2 and 80 characters.');
+  }
+
+  const query = new URLSearchParams();
+  query.set('id', `eq.${companyId}`);
+  query.set(
+    'select',
+    'id,name,country_code,currency,created_at,updated_at'
+  );
+
+  const response = await authorizedFetch(
+    `/rest/v1/companies?${query.toString()}`,
+    {
+      method: 'PATCH',
+      headers: { Prefer: 'return=representation' },
+      body: JSON.stringify({ name }),
+    }
+  );
+
+  const rows = await parseResponse<ArthivoXCloudCompany[]>(response);
+  if (!rows.length) {
+    throw new Error(
+      'Company could not be updated. Only the company owner can rename it.'
+    );
+  }
+
+  return rows[0];
+}
+
 // ---------------------------------------------------------------------------
 // ArthivoX record sync API (v10)
 // ---------------------------------------------------------------------------

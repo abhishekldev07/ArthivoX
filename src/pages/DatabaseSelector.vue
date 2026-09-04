@@ -57,11 +57,11 @@
             <p class="text-xs text-gray-500 dark:text-gray-500 mt-1">{{ t`Continue where you left off` }}</p>
           </div>
           <div class="overflow-y-auto custom-scroll custom-scroll-thumb1" style="max-height: 235px">
-            <div v-for="(file, i) in files" :key="file.dbPath" class="arthivox-recent-row flex gap-3 items-center cursor-pointer" :title="t`${file.companyName} stored at ${file.dbPath}`" @click="selectFile(file)">
+            <div v-for="(file, i) in files" :key="file.dbPath" class="arthivox-recent-row flex gap-3 items-center cursor-pointer" :title="file.companyName" @click="selectFile(file)">
               <div class="w-9 h-9 rounded-lg flex-center bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 font-semibold flex-shrink-0">{{ file.companyName?.charAt(0)?.toUpperCase() || i + 1 }}</div>
               <div class="min-w-0 flex-1">
                 <div class="flex justify-between gap-3 items-baseline"><h3 class="font-medium text-gray-900 dark:text-gray-200 truncate">{{ file.companyName }}</h3><p class="whitespace-nowrap text-xs text-gray-500 dark:text-gray-500">{{ formatDate(file.modified) }}</p></div>
-                <p class="text-xs text-gray-500 dark:text-gray-500 truncate mt-1">{{ truncate(file.dbPath) }}</p>
+                <p class="text-xs text-gray-500 dark:text-gray-500 truncate mt-1">Local company database</p>
               </div>
               <button class="p-2 hover:bg-red-100 dark:hover:bg-red-900 rounded-lg text-gray-400 hover:text-red-600" @click.stop="() => deleteDb(i)"><feather-icon name="trash-2" class="w-4 h-4" /></button>
             </div>

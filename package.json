@@ -1,7 +1,7 @@
 {
   "name": "arthivox-desktop",
   "productName": "ArthivoX",
-  "version": "0.37.0",
+  "version": "1.0.0",
   "description": "Local-first desktop accounting with secure ArthivoX Cloud sync and encrypted backup.",
   "author": {
     "name": "ArthivoX"
@@ -91,3 +91,4 @@
     "yarn": ">=1.22 <2"
   }
 }
+

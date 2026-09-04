@@ -23,9 +23,11 @@
       :companies="cloudCompanies"
       :local-paths="cloudCompanyPaths"
       :loading="cloudLoading"
+      :saving-company="cloudCompanySaving"
       @create-company="newDatabase"
       @import-local="importLocalCompany"
       @open-company="openCloudCompany"
+      @edit-company="editCloudCompany"
       @logout="logoutCloud"
       @refresh="refreshCloudCompanies"
     />
@@ -136,6 +138,7 @@ import {
   getValidSession,
   listCompanies,
   signOut as signOutCloud,
+  updateCompany as updateCloudCompany,
 } from 'src/cloud/supabase';
 import { startCloudSync, stopCloudSync } from 'src/cloud/sync';
 import {
@@ -248,6 +251,7 @@ export default defineComponent({
       cloudUserEmail: '',
       cloudCompanies: [],
       cloudLoading: false,
+      cloudCompanySaving: false,
       cloudCompanyPaths: {},
       pendingCloudImport: false,
       cloudBackupTimer: null,
@@ -271,6 +275,7 @@ export default defineComponent({
       cloudUserEmail: string;
       cloudCompanies: ArthivoXCloudCompany[];
       cloudLoading: boolean;
+      cloudCompanySaving: boolean;
       cloudCompanyPaths: Record<string, string>;
       pendingCloudImport: boolean;
       cloudBackupTimer: number | null;
@@ -440,6 +445,80 @@ export default defineComponent({
         showToast({ message, type: 'error' });
       } finally {
         this.cloudLoading = false;
+      }
+    },
+    async editCloudCompany(input: {
+      companyId: string;
+      name: string;
+    }): Promise<void> {
+      if (this.cloudCompanySaving) {
+        return;
+      }
+
+      const name = input.name.trim();
+      if (name.length < 2 || name.length > 80) {
+        showToast({
+          message: 'Company name must be between 2 and 80 characters.',
+          type: 'error',
+        });
+        return;
+      }
+
+      const current = this.cloudCompanies.find(
+        (company) => company.id === input.companyId
+      );
+      if (!current) {
+        showToast({ message: 'Company could not be found.', type: 'error' });
+        return;
+      }
+
+      this.cloudCompanySaving = true;
+      try {
+        let updated = current;
+
+        if (current.name.trim() !== name) {
+          updated = await updateCloudCompany(input.companyId, { name });
+        }
+
+        const oldLocalPath = this.cloudCompanyPaths[input.companyId];
+        if (oldLocalPath) {
+          const newLocalPath = await ipc.renameDbFile(
+            oldLocalPath,
+            updated.name
+          );
+
+          if (newLocalPath !== oldLocalPath) {
+            this.cloudCompanyPaths = {
+              ...this.cloudCompanyPaths,
+              [input.companyId]: newLocalPath,
+            };
+            this.saveCloudPathMap();
+
+            if (fyo.config.get('lastSelectedFilePath') === oldLocalPath) {
+              fyo.config.set('lastSelectedFilePath', newLocalPath);
+            }
+          }
+        }
+
+        this.cloudCompanies = this.cloudCompanies.map((company) =>
+          company.id === updated.id ? updated : company
+        );
+
+        showToast({
+          message:
+            current.name.trim() === updated.name.trim()
+              ? 'Local company database name updated'
+              : `Company renamed to ${updated.name}`,
+          type: 'success',
+        });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        showToast({
+          message: `Company update could not finish: ${message}`,
+          type: 'error',
+        });
+      } finally {
+        this.cloudCompanySaving = false;
       }
     },
     async leaveLocalWorkspace(): Promise<void> {
@@ -673,6 +752,31 @@ export default defineComponent({
       // intentionally disabled until an ArthivoX release channel is configured.
 
       this.dbPath = filePath;
+
+      const cloudCompanyId = this.getCloudCompanyIdForPath(filePath);
+      const cloudCompany = cloudCompanyId
+        ? this.cloudCompanies.find((company) => company.id === cloudCompanyId)
+        : undefined;
+
+      // Cloud company name is the authoritative display name for a linked
+      // workspace. Keep the physical .books.db filename unchanged.
+      if (cloudCompany?.name?.trim()) {
+        const accountingSettings =
+          fyo.singles[ModelNameEnum.AccountingSettings];
+        if (accountingSettings) {
+          const localName = accountingSettings.get('companyName');
+          if (localName !== cloudCompany.name.trim()) {
+            const changed = await accountingSettings.set(
+              'companyName',
+              cloudCompany.name.trim()
+            );
+            if (changed) {
+              await accountingSettings.sync();
+            }
+          }
+        }
+      }
+
       this.companyName = (await fyo.getValue(
         ModelNameEnum.AccountingSettings,
         'companyName'
@@ -680,7 +784,6 @@ export default defineComponent({
       await this.setSearcher();
       updateConfigFiles(fyo);
 
-      const cloudCompanyId = this.getCloudCompanyIdForPath(filePath);
       if (cloudCompanyId) {
         void this.startCloudSyncForCompany(cloudCompanyId);
       }

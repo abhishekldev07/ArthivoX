@@ -14,6 +14,7 @@ import { SelectFileOptions, SelectFileReturn } from 'utils/types';
 import databaseManager from '../backend/database/manager';
 import { emitMainProcessError } from '../backend/helpers';
 import { Main } from '../main';
+import config from 'utils/config';
 import { DatabaseMethod } from '../utils/db/types';
 import { IPC_ACTIONS } from '../utils/messages';
 import { getLanguageMap } from './getLanguageMap';
@@ -82,6 +83,92 @@ export default function registerIpcMainActionListeners(main: Main) {
       }
 
       return dbFilePath;
+    }
+  );
+
+  ipcMain.handle(
+    IPC_ACTIONS.RENAME_DB_FILE,
+    async (_, oldPath: string, companyName: string) => {
+      const sourcePath = path.resolve(oldPath);
+      const cleanCompanyName = companyName.trim();
+
+      if (!cleanCompanyName || cleanCompanyName.length > 80) {
+        throw new Error('Company name must be between 1 and 80 characters.');
+      }
+
+      if (!sourcePath.toLowerCase().endsWith('.books.db')) {
+        throw new Error('ArthivoX can only rename .books.db company databases.');
+      }
+
+      const stat = await fs.stat(sourcePath).catch(() => null);
+      if (!stat?.isFile()) {
+        throw new Error('The local company database could not be found.');
+      }
+
+      let safeName = cleanCompanyName
+        .replace(/[<>:"/\\|?*\x00-\x1F]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .replace(/[. ]+$/g, '')
+        .trim();
+
+      if (!safeName) {
+        throw new Error('The company name cannot be used as a Windows filename.');
+      }
+
+      if (/^(con|prn|aux|nul|com[1-9]|lpt[1-9])$/i.test(safeName)) {
+        safeName = `${safeName} Company`;
+      }
+
+      const destinationPath = path.join(
+        path.dirname(sourcePath),
+        `${safeName}.books.db`
+      );
+
+      const samePath =
+        sourcePath.localeCompare(destinationPath, undefined, {
+          sensitivity: 'accent',
+        }) === 0;
+
+      if (samePath) {
+        return sourcePath;
+      }
+
+      if (await fs.pathExists(destinationPath)) {
+        throw new Error(
+          `A local database named "${path.basename(destinationPath)}" already exists.`
+        );
+      }
+
+      // Company rename is initiated from the Cloud Home screen, where no local
+      // workspace should be active. Close any stale database connection before
+      // moving the SQLite file so Windows cannot keep the file locked.
+      try {
+        await databaseManager.call('close' as DatabaseMethod);
+      } catch {
+        // If there is no active database, there is nothing to close.
+      }
+
+      await fs.move(sourcePath, destinationPath, { overwrite: false });
+
+      // Keep the Recent Companies registry aligned with the physical file.
+      const configFiles = config.get('files', []);
+      const updatedFiles = configFiles.map((file) => {
+        if (path.resolve(file.dbPath) !== sourcePath) {
+          return file;
+        }
+        return {
+          ...file,
+          dbPath: destinationPath,
+          companyName: cleanCompanyName,
+        };
+      });
+      config.set('files', updatedFiles);
+
+      if (config.get('lastSelectedFilePath') === oldPath) {
+        config.set('lastSelectedFilePath', destinationPath);
+      }
+
+      return destinationPath;
     }
   );
 

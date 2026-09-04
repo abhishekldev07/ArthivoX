@@ -300,33 +300,6 @@ export default defineComponent({
       this.editingCompany = null;
       this.editingCompanyName = '';
     },
-    localDatabaseNameOutOfDate(
-      companyId: string,
-      companyName: string
-    ): boolean {
-      const filePath = this.localPaths[companyId];
-      if (!filePath) {
-        return false;
-      }
-
-      let safeName = companyName
-        .trim()
-        .replace(/[<>:"/\\|?*\x00-\x1F]/g, ' ')
-        .replace(/\s+/g, ' ')
-        .replace(/[. ]+$/g, '')
-        .trim();
-
-      if (/^(con|prn|aux|nul|com[1-9]|lpt[1-9])$/i.test(safeName)) {
-        safeName = `${safeName} Company`;
-      }
-
-      const currentFileName = filePath.split(/[\\/]/).pop() || '';
-      return (
-        currentFileName.toLocaleLowerCase() !==
-        `${safeName}.books.db`.toLocaleLowerCase()
-      );
-    },
-
     hasLocalPath(companyId: string): boolean {
       return !!this.localPaths[companyId];
     },

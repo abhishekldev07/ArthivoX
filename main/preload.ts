@@ -202,6 +202,14 @@ const ipc = {
     )) as string;
   },
 
+  async renameDbFile(oldPath: string, companyName: string) {
+    return (await ipcRenderer.invoke(
+      IPC_ACTIONS.RENAME_DB_FILE,
+      oldPath,
+      companyName
+    )) as string;
+  },
+
   async getEnv() {
     return (await ipcRenderer.invoke(IPC_ACTIONS.GET_ENV)) as {
       isDevelopment: boolean;
