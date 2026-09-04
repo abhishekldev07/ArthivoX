@@ -48,6 +48,8 @@ The current desktop release targets Windows and is built with Electron, Vue 3, T
     <img  alt="General Ledger" src="https://github.com/abhishekldev07/ArthivoX/blob/main/docs/screenshots/general-ledger.png" />
     <br/><br/>
     <img  alt="Profit and Loss" src="https://github.com/abhishekldev07/ArthivoX/blob/main/docs/screenshots/gst-return.png" />
+    <br/><br/>
+    <img  alt="Cloud workspace" src="https://github.com/abhishekldev07/ArthivoX/blob/main/docs/screenshots/cloud-workspace.png" />
 
 </details>
 
