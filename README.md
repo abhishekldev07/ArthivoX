@@ -43,11 +43,11 @@ The current desktop release targets Windows and is built with Electron, Vue 3, T
 <details>
 <summary>Screenshots</summary>
 <br/>
-<img  alt="Pos" src="https://github.com/docs/screenshots/customer-invoices.png" />
+<img  alt="Pos" src="https://github.com/abhishekldev07/ArthivoX/blob/main/docs/screenshots/customer-invoices.png" />
     <br/><br/>
-    <img  alt="General Ledger" src="https://github.com/docs/screenshots/general-ledger.png" />
+    <img  alt="General Ledger" src="https://github.com/abhishekldev07/ArthivoX/blob/main/docs/screenshots/general-ledger.png" />
     <br/><br/>
-    <img  alt="Profit and Loss" src="https://github.com/docs/screenshots/gst-return.png" />
+    <img  alt="Profit and Loss" src="https://github.com/abhishekldev07/ArthivoX/blob/main/docs/screenshots/gst-return.png" />
 
 </details>
 
