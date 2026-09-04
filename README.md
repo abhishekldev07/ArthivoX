@@ -40,31 +40,16 @@ The current desktop release targets Windows and is built with Electron, Vue 3, T
 - **Offline operation** — continue working locally without an active internet connection.
 - **Dark and light appearance** — a finance-focused desktop interface designed for long working sessions.
 
-## Product Screenshots
+<details>
+<summary>Screenshots</summary>
+<br/>
+<img  alt="Pos" src="https://github.com/docs/screenshots/customer-invoices.png" />
+    <br/><br/>
+    <img  alt="General Ledger" src="https://github.com/docs/screenshots/general-ledger.png" />
+    <br/><br/>
+    <img  alt="Profit and Loss" src="https://github.com/docs/screenshots/gst-return.png" />
 
-### Customer Invoices
-
-<p align="center">
-  <img src="docs/screenshots/customer-invoices.png" alt="ArthivoX Customer Invoices" width="100%" />
-</p>
-
-### General Ledger
-
-<p align="center">
-  <img src="docs/screenshots/general-ledger.png" alt="ArthivoX General Ledger" width="100%" />
-</p>
-
-### Tax Desk
-
-<p align="center">
-  <img src="docs/screenshots/gst-return.png" alt="ArthivoX GSTR1 Tax Desk" width="100%" />
-</p>
-
-### ArthivoX Cloud Workspace
-
-<p align="center">
-  <img src="docs/screenshots/cloud-workspace.png" alt="ArthivoX Cloud Workspace" width="100%" />
-</p>
+</details>
 
 ## ArthivoX Cloud
 
